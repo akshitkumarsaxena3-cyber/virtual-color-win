@@ -1,0 +1,20 @@
+/* Custom Mobile-first Game Arena Styles */
+
+body {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+input, button {
+  user-select: auto;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+.bet-choice-btn:active {
+  transform: scale(0.96);
+}

@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block title %}Arena - Virtual Color Win{% endblock %}
+
+{% block content %}
+<div class="flex-1 flex flex-col">
+  
+  <!-- Top User Profile & Wallet Bar -->
+  <div class="p-3 bg-slate-900 border-b border-slate-700/80 flex items-center justify-between">
+    <div class="flex items-center space-x-2">
+      <div class="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xs border border-indigo-500/30">
+        👤
+      </div>
+      <div>
+        <div class="text-[11px] text-slate-400 font-mono">{{ user.phone }}</div>
+        <div class="text-xs font-black text-amber-300 flex items-center gap-1">
+          🪙 <span id="userBalance">{{ user.virtual_coins }}</span> <span class="text-[10px] text-slate-400 font-normal">Coins</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Free Coins Faucet Button -->
+    <form method="POST" action="{{ url_for('faucet') }}">
+      <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold hover:bg-emerald-500/30 active:scale-95 transition flex items-center gap-1">
+        <span>+500</span> <span class="text-[10px]">Free</span>
+      </button>
+    </form>
+  </div>
+
+  <!-- Round & Countdown Card -->
+  <div class="m-3 p-3.5 bg-gradient-to-br from-slate-900 to-indigo-950/60 border border-indigo-500/20 rounded-2xl flex items-center justify-between shadow-lg">
+    <div>
+      <div class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Current Period</div>
+      <div class="text-sm font-mono font-bold text-amber-400" id="currentRoundCode">Syncing...</div>
+      <div id="lockBadge" class="hidden mt-1 inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
+        🔒 Betting Locked
+      </div>
+    </div>
+    <div class="text-right">
+      <div class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Time Left</div>
+      <div class="text-3xl font-mono font-black text-white" id="timerDisplay">--:--</div>
+    </div>
+  </div>
+
+  <!-- Toast Notification / Last Round Banner -->
+  <div id="outcomeBanner" class="hidden mx-3 mb-2 p-2.5 rounded-xl text-xs font-bold text-center border shadow-md transition-all">
+    <!-- Populated dynamically -->
+  </div>
+
+  <!-- Game Arena Controls -->
+  <div class="px-3 flex-1 flex flex-col gap-3">
+    
+    <!-- Color Betting Buttons -->
+    <div>
+      <div class="text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Select Color</div>
+      <div class="grid grid-cols-3 gap-2">
+        <button onclick="selectBet('color', 'Green')" id="choice-Green" class="bet-choice-btn py-3 rounded-xl bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-black text-sm shadow-lg shadow-emerald-500/20 active:scale-95 transition border-2 border-transparent">
+          Green
+          <span class="block text-[10px] font-normal opacity-90">2.0x</span>
+        </button>
+        <button onclick="selectBet('color', 'Violet')" id="choice-Violet" class="bet-choice-btn py-3 rounded-xl bg-gradient-to-b from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-black text-sm shadow-lg shadow-purple-500/20 active:scale-95 transition border-2 border-transparent">
+          Violet
+          <span class="block text-[10px] font-normal opacity-90">4.5x</span>
+        </button>
+        <button onclick="selectBet('color', 'Red')" id="choice-Red" class="bet-choice-btn py-3 rounded-xl bg-gradient-to-b from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-black text-sm shadow-lg shadow-rose-500/20 active:scale-95 transition border-2 border-transparent">
+          Red
+          <span class="block text-[10px] font-normal opacity-90">2.0x</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Number Betting Grid (0-9) -->
+    <div>
+      <div class="text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider flex justify-between">
+        <span>Select Number (0 - 9)</span>
+        <span class="text-amber-400 font-bold">9.0x Payout</span>
+      </div>
+      <div class="grid grid-cols-5 gap-1.5">
+        {% for n in range(10) %}
+        <button onclick="selectBet('number', '{{ n }}')" id="choice-num-{{ n }}" class="bet-choice-btn py-2 rounded-lg bg-slate-900 hover:bg-slate-700 border border-slate-700/80 text-white font-bold font-mono text-xs active:scale-95 transition">
+          {{ n }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Chips Amount Selection -->
+    <div>
+      <div class="text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Virtual Coins Amount</div>
+      <div class="grid grid-cols-5 gap-1.5">
+        <button onclick="setChip(10)" class="chip-btn py-1.5 rounded-lg border text-xs font-bold transition" data-amt="10">10</button>
+        <button onclick="setChip(50)" class="chip-btn py-1.5 rounded-lg border text-xs font-bold transition" data-amt="50">50</button>
+        <button onclick="setChip(100)" class="chip-btn py-1.5 rounded-lg border text-xs font-bold transition" data-amt="100">100</button>
+        <button onclick="setChip(500)" class="chip-btn py-1.5 rounded-lg border text-xs font-bold transition" data-amt="500">500</button>
+        <button onclick="setChip(1000)" class="chip-btn py-1.5 rounded-lg border text-xs font-bold transition" data-amt="1000">1000</button>
+      </div>
+    </div>
+
+    <!-- Submit Bet Button -->
+    <button id="placeBetBtn" onclick="submitBet()" class="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-black text-sm rounded-xl shadow-lg shadow-indigo-500/25 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed">
+      Place Bet (<span id="btnAmountText">10</span> Coins)
+    </button>
+
+    <!-- Active Bets in Current Period -->
+    <div id="activeBetsSection" class="hidden p-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-xs">
+      <div class="font-bold text-slate-400 text-[10px] uppercase mb-1">Your Bets in This Round:</div>
+      <div id="activeBetsList" class="space-y-1"></div>
+    </div>
+
+    <!-- Past Rounds History -->
+    <div class="mt-2 mb-4">
+      <div class="text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Round History</div>
+      <div class="bg-slate-900 border border-slate-700/80 rounded-xl overflow-hidden">
+        <table class="w-full text-xs text-left">
+          <thead class="bg-slate-950 text-slate-400 text-[10px] uppercase border-b border-slate-800">
+            <tr>
+              <th class="p-2.5">Period</th>
+              <th class="p-2.5">Number</th>
+              <th class="p-2.5">Color Result</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody" class="divide-y divide-slate-800 font-mono">
+            <tr><td colspan="3" class="p-3 text-center text-slate-500">Loading history...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let selectedType = null;
+  let selectedChoice = null;
+  let selectedChip = 10;
+  let isLocked = false;
+  let lastCheckedRound = null;
+
+  setChip(10);
+
+  function setChip(amt) {
+    selectedChip = amt;
+    document.getElementById('btnAmountText').innerText = amt;
+    document.querySelectorAll('.chip-btn').forEach(btn => {
+      if (parseInt(btn.getAttribute('data-amt')) === amt) {
+        btn.className = "chip-btn py-1.5 rounded-lg border border-indigo-500 bg-indigo-600 text-white text-xs font-bold";
+      } else {
+        btn.className = "chip-btn py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-slate-300 text-xs font-bold hover:bg-slate-800";
+      }
+    });
+  }
+
+  function selectBet(type, choice) {
+    if (isLocked) return;
+    selectedType = type;
+    selectedChoice = choice;
+
+    // Reset styles
+    document.querySelectorAll('.bet-choice-btn').forEach(btn => {
+      btn.classList.remove('ring-4', 'ring-indigo-400');
+    });
+
+    const activeBtn = type === 'color' 
+      ? document.getElementById(`choice-${choice}`)
+      : document.getElementById(`choice-num-${choice}`);
+
+    if (activeBtn) {
+      activeBtn.classList.add('ring-4', 'ring-indigo-400');
+    }
+  }
+
+  async function submitBet() {
+    if (!selectedType || !selectedChoice) {
+      alert("Pehle koi ek Color ya Number select karein!");
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/bet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bet_type: selectedType,
+          choice: selectedChoice,
+          amount: selectedChip
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('userBalance').innerText = data.new_balance;
+        showBanner(`✅ ${data.message}`, 'success');
+        fetchStatus();
+      } else {
+        showBanner(`⚠️ ${data.message}`, 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      showBanner("Network error. Please try again.", "error");
+    }
+  }
+
+  function showBanner(text, type) {
+    const banner = document.getElementById('outcomeBanner');
+    banner.innerText = text;
+    banner.classList.remove('hidden', 'bg-emerald-500/20', 'text-emerald-300', 'border-emerald-500/30', 'bg-rose-500/20', 'text-rose-300', 'border-rose-500/30');
+    if (type === 'success') {
+      banner.classList.add('bg-emerald-500/20', 'text-emerald-300', 'border-emerald-500/30');
+    } else {
+      banner.classList.add('bg-rose-500/20', 'text-rose-300', 'border-rose-500/30');
+    }
+    setTimeout(() => { banner.classList.add('hidden'); }, 4000);
+  }
+
+  async function fetchStatus() {
+    try {
+      const res = await fetch('/api/status');
+      const data = await res.json();
+
+      document.getElementById('currentRoundCode').innerText = data.round_code;
+      document.getElementById('userBalance').innerText = data.balance;
+
+      // Timer display
+      const t = data.time_left;
+      const formatted = `00:${t < 10 ? '0' + t : t}`;
+      const timerDisplay = document.getElementById('timerDisplay');
+      timerDisplay.innerText = formatted;
+
+      isLocked = data.is_locked;
+      const lockBadge = document.getElementById('lockBadge');
+      const placeBetBtn = document.getElementById('placeBetBtn');
+
+      if (isLocked) {
+        lockBadge.classList.remove('hidden');
+        placeBetBtn.disabled = true;
+        timerDisplay.classList.add('text-rose-400');
+        timerDisplay.classList.remove('text-white');
+      } else {
+        lockBadge.classList.add('hidden');
+        placeBetBtn.disabled = false;
+        timerDisplay.classList.add('text-white');
+        timerDisplay.classList.remove('text-rose-400');
+      }
+
+      // Check for new round transition
+      if (lastCheckedRound && lastCheckedRound !== data.round_code) {
+        // Round changed! Clear active selection
+        document.querySelectorAll('.bet-choice-btn').forEach(b => b.classList.remove('ring-4', 'ring-indigo-400'));
+        selectedType = null;
+        selectedChoice = null;
+        if (data.last_result) {
+          const lr = data.last_result;
+          if (lr.status === 'won') {
+            showBanner(`🎉 Congratulations! You won +${lr.payout} Coins on round ${lr.round_code}!`, 'success');
+          } else if (lr.status === 'lost') {
+            showBanner(`❌ Round ${lr.round_code} ended: Result was ${lr.winning_color} (${lr.winning_number}).`, 'error');
+          }
+        }
+      }
+      lastCheckedRound = data.round_code;
+
+      // Active Bets rendering
+      const activeSection = document.getElementById('activeBetsSection');
+      const activeList = document.getElementById('activeBetsList');
+      if (data.active_bets && data.active_bets.length > 0) {
+        activeSection.classList.remove('hidden');
+        activeList.innerHTML = data.active_bets.map(b => `
+          <div class="flex justify-between items-center text-slate-300">
+            <span>Choice: <b class="text-white">${b.bet_choice}</b> (${b.bet_type})</span>
+            <span class="text-amber-400 font-bold">${b.amount} Coins</span>
+          </div>
+        `).join('');
+      } else {
+        activeSection.classList.add('hidden');
+      }
+
+      // Render History Table
+      renderHistory(data.recent_rounds);
+
+    } catch (e) {
+      console.error("Status fetch error", e);
+    }
+  }
+
+  function renderHistory(rounds) {
+    const tbody = document.getElementById('historyTableBody');
+    if (!rounds || rounds.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="3" class="p-3 text-center text-slate-500">No rounds yet</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rounds.map(r => {
+      const colors = r.winning_color.split(',');
+      const badges = colors.map(c => {
+        if (c === 'Red') return `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">Red</span>`;
+        if (c === 'Green') return `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Green</span>`;
+        return `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">Violet</span>`;
+      }).join(' ');
+
+      return `
+        <tr class="hover:bg-slate-800/50">
+          <td class="p-2.5 font-bold text-slate-300">${r.round_code}</td>
+          <td class="p-2.5 font-bold text-amber-300">${r.winning_number}</td>
+          <td class="p-2.5">${badges}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Poll status every second
+  fetchStatus();
+  setInterval(fetchStatus, 1000);
+</script>
+{% endblock %}
